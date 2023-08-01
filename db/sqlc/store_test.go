@@ -35,44 +35,41 @@ func TestStore_TransferTx(t *testing.T) {
 	for i := 0; i < n; i++ {
 		err := <-errs
 		require.NoError(t, err)
-
 		result := <-results
 		require.NotEmpty(t, result)
 
 		// check transfer
-		transfer := result.Transfer
-		require.NotEmpty(t, result)
-		require.Equal(t, accountFrom.ID, transfer.FromAccountID)
-		require.Equal(t, accountTo.ID, transfer.ToAccountID)
-		require.Equal(t, amount, transfer.Amount)
-		require.NotZero(t, transfer.ID)
-		require.NotZero(t, transfer.CreatedAt)
-
-		_, err = store.GetTransfer(context.Background(), transfer.ID)
+		assertTransfer(t, result.Transfer, accountFrom, accountTo, amount)
+		_, err = store.GetTransfer(context.Background(), result.Transfer.ID)
 		require.NoError(t, err)
 
 		// check entries
-		entryFrom := result.FromEntry
-		require.NotEmpty(t, entryFrom)
-		require.Equal(t, accountFrom.ID, entryFrom.AccountID)
-		require.Equal(t, -amount, entryFrom.Amount)
-		require.NotZero(t, entryFrom.ID)
-		require.NotZero(t, entryFrom.CreatedAt)
-
-		_, err = store.GetEntry(context.Background(), entryFrom.ID)
+		assertEntry(t, result.FromEntry, accountFrom, amount)
+		_, err = store.GetEntry(context.Background(), result.FromEntry.ID)
 		require.NoError(t, err)
 
-		entryTo := result.ToEntry
-		require.NotEmpty(t, entryTo)
-		require.Equal(t, accountTo.ID, entryTo.AccountID)
-		require.Equal(t, amount, entryTo.Amount)
-		require.NotZero(t, entryTo.ID)
-		require.NotZero(t, entryTo.CreatedAt)
-
-		_, err = store.GetEntry(context.Background(), entryTo.ID)
+		assertEntry(t, result.ToEntry, accountTo, amount)
+		_, err = store.GetEntry(context.Background(), result.ToEntry.ID)
 		require.NoError(t, err)
 
 		// TODO: check accounts' balances
 
 	}
+}
+
+func assertEntry(t *testing.T, entry Entry, account Account, amount int64) {
+	require.NotEmpty(t, entry)
+	require.Equal(t, account.ID, entry.AccountID)
+	require.Equal(t, -amount, entry.Amount)
+	require.NotZero(t, entry.ID)
+	require.NotZero(t, entry.CreatedAt)
+}
+
+func assertTransfer(t *testing.T, transfer Transfer, accountFrom Account, accountTo Account, amount int64) {
+	require.NotEmpty(t, transfer)
+	require.Equal(t, accountFrom.ID, transfer.FromAccountID)
+	require.Equal(t, accountTo.ID, transfer.ToAccountID)
+	require.Equal(t, amount, transfer.Amount)
+	require.NotZero(t, transfer.ID)
+	require.NotZero(t, transfer.CreatedAt)
 }
