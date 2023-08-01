@@ -30,10 +30,11 @@
     - https://dbdiagram.io/
     - simple-bank.sql
     - sqlc.yaml
- 
-
-
-    
 
 
 
+
+
+
+
+ref: https://github.com/techschool/simplebank
