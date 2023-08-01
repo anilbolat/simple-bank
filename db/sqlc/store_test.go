@@ -44,7 +44,7 @@ func TestStore_TransferTx(t *testing.T) {
 		require.NoError(t, err)
 
 		// check entries
-		assertEntry(t, result.FromEntry, accountFrom, amount)
+		assertEntry(t, result.FromEntry, accountFrom, -amount)
 		_, err = store.GetEntry(context.Background(), result.FromEntry.ID)
 		require.NoError(t, err)
 
@@ -60,7 +60,7 @@ func TestStore_TransferTx(t *testing.T) {
 func assertEntry(t *testing.T, entry Entry, account Account, amount int64) {
 	require.NotEmpty(t, entry)
 	require.Equal(t, account.ID, entry.AccountID)
-	require.Equal(t, -amount, entry.Amount)
+	require.Equal(t, amount, entry.Amount)
 	require.NotZero(t, entry.ID)
 	require.NotZero(t, entry.CreatedAt)
 }
