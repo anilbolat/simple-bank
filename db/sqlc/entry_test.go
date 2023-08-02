@@ -2,10 +2,11 @@ package db
 
 import (
 	"context"
-	"github.com/anilbolat/simple-bank/util"
-	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
+
+	"github.com/anilbolat/simple-bank/util"
+	"github.com/stretchr/testify/require"
 )
 
 func createRandomEntry(account Account, t *testing.T) Entry {
@@ -44,7 +45,6 @@ func TestQueries_GetEntry(t *testing.T) {
 }
 
 func TestQueries_ListEntries(t *testing.T) {
-
 	// given
 	accountExpected := createRandomAccount(t)
 	for i := 0; i < 10; i++ {
@@ -69,5 +69,4 @@ func TestQueries_ListEntries(t *testing.T) {
 		require.NotEmpty(t, entry)
 		require.Equal(t, accountExpected.ID, entry.AccountID)
 	}
-
 }

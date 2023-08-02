@@ -2,8 +2,9 @@ package db
 
 import (
 	"context"
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestStore_TransferTx(t *testing.T) {
@@ -25,7 +26,6 @@ func TestStore_TransferTx(t *testing.T) {
 	// run n concurrent transfer transactions
 	for i := 0; i < n; i++ {
 		go func() {
-
 			transferTxResult, err := store.TransferTx(ctx, transferTxParams)
 			errs <- err
 			results <- transferTxResult

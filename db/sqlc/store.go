@@ -3,7 +3,6 @@ package db
 import (
 	"context"
 	"database/sql"
-	"fmt"
 )
 
 // Store provides all funcs to execute db queries and transactions
@@ -29,12 +28,17 @@ func (store *Store) execTx(ctx context.Context, queryFn func(queries *Queries) e
 	err = queryFn(queries)
 	if err != nil {
 		if errRb := tx.Rollback(); errRb != nil {
-			return fmt.Errorf("tx err: %v, rb err: %v", err, errRb)
+			return errRb
 		}
 		return err
 	}
 
-	return tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 type TransferTxParams struct {
@@ -60,11 +64,7 @@ func (store *Store) TransferTx(ctx context.Context, arg TransferTxParams) (Trans
 		var err error
 
 		// create transfer
-		result.Transfer, err = queries.CreateTransfer(ctx, CreateTransferParams{
-			FromAccountID: arg.FromAccountID,
-			ToAccountID:   arg.ToAccountID,
-			Amount:        arg.Amount,
-		})
+		result.Transfer, err = queries.CreateTransfer(ctx, CreateTransferParams(arg))
 		if err != nil {
 			return err
 		}

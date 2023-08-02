@@ -19,4 +19,7 @@ sqlc:
 test:
 	go test -v -cover ./...
 
-.PHONY: postgres createdb dropdb migrateup migratedown sqlc test
+lint:
+	 golangci-lint run -c=.golangci.yml ./...
+
+.PHONY: postgres createdb dropdb migrateup migratedown sqlc test lint

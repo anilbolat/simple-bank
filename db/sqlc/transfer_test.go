@@ -2,9 +2,10 @@ package db
 
 import (
 	"context"
+	"testing"
+
 	"github.com/anilbolat/simple-bank/util"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func createRandomTransfer(accountFromExpected Account, accountToExpected Account, t *testing.T) Transfer {
