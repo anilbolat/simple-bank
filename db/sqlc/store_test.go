@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -13,6 +14,8 @@ func TestStore_TransferTx(t *testing.T) {
 
 	accountFromInit := createRandomAccount(t)
 	accountToInit := createRandomAccount(t)
+	fmt.Println(">> before:", accountFromInit.Balance, accountToInit.Balance)
+
 	amount := int64(10)
 	transferTxParams := TransferTxParams{
 		FromAccountID: accountFromInit.ID,
@@ -63,6 +66,9 @@ func TestStore_TransferTx(t *testing.T) {
 		require.NotEmpty(t, accountTo)
 		require.Equal(t, accountToInit.ID, accountTo.ID)
 
+		// check balances
+		fmt.Println(">> tx:", accountFrom.Balance, accountTo.Balance)
+
 		// check accounts' balances
 		diff1 := accountFromInit.Balance - accountFrom.Balance
 		diff2 := accountTo.Balance - accountToInit.Balance
@@ -82,8 +88,58 @@ func TestStore_TransferTx(t *testing.T) {
 	updatedAccountTo, err := store.GetAccount(ctx, accountToInit.ID)
 	require.NoError(t, err)
 
+	fmt.Println(">> after:", updatedAccountFrom.Balance, updatedAccountTo.Balance)
 	require.Equal(t, updatedAccountFrom.Balance, accountFromInit.Balance-int64(n)*amount)
 	require.Equal(t, updatedAccountTo.Balance, accountToInit.Balance+int64(n)*amount)
+}
+
+func TestTransferTxDeadlock(t *testing.T) {
+	ctx := context.Background()
+	store := NewStore(testDB)
+
+	accountFrom := createRandomAccount(t)
+	accountTo := createRandomAccount(t)
+	fmt.Println(">> before:", accountFrom.Balance, accountTo.Balance)
+
+	n := 10
+	amount := int64(10)
+	errs := make(chan error)
+
+	for i := 0; i < n; i++ {
+		fromAccountID := accountFrom.ID
+		toAccountID := accountTo.ID
+
+		if i%2 == 1 {
+			fromAccountID = accountTo.ID
+			toAccountID = accountFrom.ID
+		}
+
+		go func() {
+			_, err := store.TransferTx(ctx, TransferTxParams{
+				FromAccountID: fromAccountID,
+				ToAccountID:   toAccountID,
+				Amount:        amount,
+			})
+
+			errs <- err
+		}()
+	}
+
+	for i := 0; i < n; i++ {
+		err := <-errs
+		require.NoError(t, err)
+	}
+
+	// check the final updated balance
+	updatedAccount1, err := store.GetAccount(ctx, accountFrom.ID)
+	require.NoError(t, err)
+
+	updatedAccount2, err := store.GetAccount(ctx, accountTo.ID)
+	require.NoError(t, err)
+
+	fmt.Println(">> after:", updatedAccount1.Balance, updatedAccount2.Balance)
+	require.Equal(t, accountFrom.Balance, updatedAccount1.Balance)
+	require.Equal(t, accountTo.Balance, updatedAccount2.Balance)
 }
 
 func assertEntry(t *testing.T, entry Entry, account Account, amount int64) {
