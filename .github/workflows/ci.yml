@@ -18,6 +18,8 @@ jobs:
     services:
       postgres:
         image: postgres:12-alpine
+        ports:
+          - 5432:5432
         env:
           POSTGRES_USER: root
           POSTGRES_PASSWORD: secret
