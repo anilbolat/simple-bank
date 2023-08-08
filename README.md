@@ -14,24 +14,39 @@
 
 # db
 ### options
-    - database/sql
-    - gorm
-    - sqlx
-    - sqlc (https://sqlc.dev/)
-    - gorp (https://github.com/go-gorp/gorp)
+      - database/sql
+      - gorm
+      - sqlx
+      - sqlc (https://sqlc.dev/)
+      - gorp (https://github.com/go-gorp/gorp)
 
 #### why is sqlc used ?
-    - Very fast & easy to use
-    - Automatic code generation
-    - Catch SQL query errors before generating code
-    - Full support Postgres. MySQL is experimental.
+      - Very fast & easy to use
+      - Automatic code generation
+      - Catch SQL query errors before generating code
+      - Full support Postgres. MySQL is experimental.
 
 #### sql stmts
-    - https://dbdiagram.io/
-    - simple-bank.sql
-    - sqlc.yaml
+      - https://dbdiagram.io/
+      - simple-bank.sql
+      - sqlc.yaml
 
 
+# REST
+### HTTP web framework options
+      - gin (https://github.com/gin-gonic/gin)
+      - beego
+      - echo
+      - revel
+      - martini
+      - fiber
+      - buffalo
+
+### HTTP router options
+      - fasthttp
+      - gorilla mux
+      - httprouter
+      - chi
 
 
 

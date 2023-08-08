@@ -22,4 +22,7 @@ test:
 lint:
 	golangci-lint run -c=.golangci.yml ./...
 
-.PHONY: postgres createdb dropdb migrateup migratedown sqlc test lint
+server:
+	go run ./app/main.go
+
+.PHONY: postgres createdb dropdb migrateup migratedown sqlc test lint server
