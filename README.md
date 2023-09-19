@@ -49,6 +49,14 @@
       - chi
 
 
+# Mocking
+### Memory
+      - Implement fake db to store in memory
+      - Uses map
+
+### Stubs: gomock
+      - Return hard-coded values
+      - https://github.com/golang/mock
 
 
 
