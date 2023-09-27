@@ -1,16 +1,16 @@
 package api
 
 import (
-	"encoding/json"
+	"bytes"
 	"fmt"
-	mockdb "github.com/anilbolat/simple-bank/db/mock"
-	db "github.com/anilbolat/simple-bank/db/sqlc"
-	"github.com/anilbolat/simple-bank/util"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/require"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	mockdb "github.com/anilbolat/simple-bank/db/mock"
+	db "github.com/anilbolat/simple-bank/db/sqlc"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetAccountAPI(t *testing.T) {
@@ -39,18 +39,13 @@ func TestGetAccountAPI(t *testing.T) {
 
 	// assert
 	require.Equal(t, http.StatusOK, recorder.Code)
-	require.NotEmpty(t, recorder.Body)
-	var actualAccount db.Account
-	err = json.NewDecoder(recorder.Body).Decode(&actualAccount)
-	require.NoError(t, err)
-	require.Equal(t, account, actualAccount)
+	assertResponse(t, recorder.Body, account)
 }
 
-func randomAccount() db.Account {
-	return db.Account{
-		ID:       util.RandomInt(1, 1000),
-		Owner:    util.RandomOwner(),
-		Balance:  util.RandomMoney(),
-		Currency: util.RandomCurrency(),
-	}
+func assertResponse(t *testing.T, resBody *bytes.Buffer, expectedAccount db.Account) {
+	require.NotEmpty(t, resBody)
+	var actualAccount db.Account
+	err := getAccountFromResponseBody(resBody, &actualAccount)
+	require.NoError(t, err)
+	require.Equal(t, expectedAccount, actualAccount)
 }
