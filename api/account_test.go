@@ -2,6 +2,8 @@ package api
 
 import (
 	"bytes"
+	"database/sql"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -17,35 +19,105 @@ func TestGetAccountAPI(t *testing.T) {
 	// given
 	account := randomAccount()
 
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	store := mockdb.NewMockStore(ctrl)
+	testCases := []struct {
+		name            string
+		accountID       int64
+		stubFn          func(store *mockdb.MockStore)
+		checkResponseFn func(t *testing.T, recorder *httptest.ResponseRecorder)
+	}{
+		{
+			name:      "OK",
+			accountID: account.ID,
+			stubFn: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					GetAccount(gomock.Any(), gomock.Eq(account.ID)).
+					Times(1).
+					Return(account, nil)
+			},
+			checkResponseFn: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+				assertAccountInResponse(t, recorder.Body, account)
+			},
+		},
+		{
+			name:      "NotFound",
+			accountID: account.ID,
+			stubFn: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					GetAccount(gomock.Any(), gomock.Eq(account.ID)).
+					Times(1).
+					Return(db.Account{}, sql.ErrNoRows)
+			},
+			checkResponseFn: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusNotFound, recorder.Code)
+				assertErrorInResponse(t, recorder.Body, "does not exist")
+			},
+		},
+		{
+			name:      "InternalError",
+			accountID: account.ID,
+			stubFn: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					GetAccount(gomock.Any(), gomock.Eq(account.ID)).
+					Times(1).
+					Return(db.Account{}, sql.ErrConnDone)
+			},
+			checkResponseFn: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+				assertErrorInResponse(t, recorder.Body, "error occurred for account ID")
+			},
+		},
+		{
+			name:      "InvalidID",
+			accountID: 0,
+			stubFn: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					GetAccount(gomock.Any(), gomock.Any()).
+					Times(0)
+			},
+			checkResponseFn: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+				assertErrorInResponse(t, recorder.Body, "Field validation for 'ID' failed")
+			},
+		},
+	}
 
-	// stubs
-	store.EXPECT().
-		GetAccount(gomock.Any(), gomock.Eq(account.ID)).
-		Times(1).
-		Return(account, nil)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			store := mockdb.NewMockStore(ctrl)
 
-	// test
-	server := NewServer(store)
-	recorder := httptest.NewRecorder()
+			server := NewServer(store)
+			recorder := httptest.NewRecorder()
 
-	url := fmt.Sprintf("/accounts/%d", account.ID)
-	request, err := http.NewRequest(http.MethodGet, url, nil)
-	require.NoError(t, err)
+			// stub
+			tc.stubFn(store)
 
-	server.router.ServeHTTP(recorder, request)
+			// test
+			request, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/accounts/%d", tc.accountID), nil)
+			require.NoError(t, err)
+			server.router.ServeHTTP(recorder, request)
 
-	// assert
-	require.Equal(t, http.StatusOK, recorder.Code)
-	assertResponse(t, recorder.Body, account)
+			// assert
+			tc.checkResponseFn(t, recorder)
+		})
+	}
 }
 
-func assertResponse(t *testing.T, resBody *bytes.Buffer, expectedAccount db.Account) {
+func assertAccountInResponse(t *testing.T, resBody *bytes.Buffer, expectedAccount db.Account) {
 	require.NotEmpty(t, resBody)
 	var actualAccount db.Account
 	err := getAccountFromResponseBody(resBody, &actualAccount)
 	require.NoError(t, err)
 	require.Equal(t, expectedAccount, actualAccount)
+}
+
+func assertErrorInResponse(t *testing.T, resBody *bytes.Buffer, expectedError string) {
+	var actualError struct {
+		Error string `json:"error"`
+	}
+	err := json.NewDecoder(resBody).Decode(&actualError)
+	require.NoError(t, err)
+	require.Contains(t, actualError.Error, expectedError)
 }
